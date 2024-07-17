@@ -11,8 +11,10 @@ class LitFunctions extends LitRawFunctions
 {
   protected $db = null;
   protected ?string $sentence = '';
+  public ?string $table = null;
+  protected ?bool $isTransact = false;
+  protected ?array $params = null;
 
-  protected ?string $table = null;
   public function __construct()
   {
     parent::__construct();
@@ -39,6 +41,12 @@ class LitFunctions extends LitRawFunctions
     return $lastWord === 'having';
   }
 
+  // Función para cambiar el valor de la propiedad table
+  protected function target(string $table): mixed
+  {
+    $this->table = $table;
+    return $this;
+  }
 
   // Función para contar registros
   protected function count(string $field, ?string $as = null): mixed
@@ -259,5 +267,7 @@ class LitFunctions extends LitRawFunctions
     $this->db = null;
     $this->sentence = null;
     $this->table = null;
+    $this->isTransact = null;
+    $this->params = null;
   }
 }

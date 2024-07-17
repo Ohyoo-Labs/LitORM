@@ -20,7 +20,7 @@ class LitCrud extends LitWhere
     parent::__construct();
   }
 
-  protected function transact(?bool $transact): mixed
+  protected function transact(?bool $transact = true): mixed
   {
     $this->isTransact = $transact ?? false;
     return $this;
@@ -91,17 +91,20 @@ class LitCrud extends LitWhere
   // Metodo modificado para procesar e insertar los datso directamente en el mismo metodo
   //@param array $data (opcional) Si llega vacio no se ejecuta la consulta
   //@param bool $withId (opcional) Retorna el id del registro insertado
-  protected function insert(?array $data, ?bool $withId = false): mixed
+  protected function insert(?array $data): mixed //, ?bool $withId = false
   {
     try {
       if ($data) {
-        if ($this->isTransact)
-          $this->db->beginTransaction();
+        /* if ($this->isTransact)
+          $this->db->beginTransaction(); */
+        $this->params = $data;
         $fields = implode(',', array_map([$this, 'sanitize'], array_keys($data)));
         $placeholders = implode(',', array_map(function ($v) {
-          return ':' . $v;
+          return ":{$v}";
         }, array_keys($data)));
-        $stmt = $this->db->prepare("INSERT INTO $this->table ({$fields}) VALUES ({$placeholders})");
+        $this->composeSentence("INSERT INTO $this->table ({$fields}) VALUES ({$placeholders})");
+        return $this;
+        /* $stmt = $this->db->prepare("INSERT INTO $this->table ({$fields}) VALUES ({$placeholders})");
         foreach ($data as $key => $value) {
           $stmt->bindValue(':' . $key, $value);
         }
@@ -113,15 +116,15 @@ class LitCrud extends LitWhere
               $this->db->commit();
           }
         } else {
-          throw new \Exception('Error al insertar el registro');
+          throw new Exception('Error al insertar el registro');
         }
-        return $executionResult;
+        return $executionResult; */
       } else {
-        return false;
+        throw new \PDOException('No se han proporcionado datos para insertar');
       }
-    } catch (\Exception $e) {
-      if ($this->isTransact)
-        $this->db->rollBack();
+    } catch (\PDOException $e) {
+      /* if ($this->isTransact)
+        $this->db->rollBack(); */
       if (defined('ENVIRONMENT') && ENVIRONMENT === 'development') {
         return $this->sendError($e->getMessage());
       }
@@ -129,18 +132,41 @@ class LitCrud extends LitWhere
     }
   }
 
-  protected function update(?array $data): mixed
+  protected function update(?array $data): mixed //, ?string $condition
   {
-    try{
-    if($data) {
-      $fields = implode(',', array_map(function ($v) {
-        return $this->sanitize($v) . '=:' . $this->sanitize($v);
-      }, array_keys($data)));
-      $this->composeSentence("UPDATE $this->table SET $fields");
-      return $this;
-    }else 
-      return $this;
-    } catch (\Exception $e) {
+    try {
+      if ($data) {
+        /* if($this->isTransact)
+          $this->db->beginTransaction(); */
+        $this->params = $data;
+        $placeholders = implode(',', array_map(function ($v) {
+          return $this->sanitize($v) . '=:' . $this->sanitize($v);
+        }, array_keys($data)));
+        $this->composeSentence("UPDATE {$this->table} SET {$placeholders}");
+        return $this;
+        /* if ($condition) {
+          $this->where($condition);
+        }
+        $stmt = $this->db->prepare($this->sentence);
+        foreach ($data as $key => $value) {
+          $stmt->bindValue(':' . $key, $value);
+        }
+        $resultUpdate = $stmt->execute();
+        if ($resultUpdate) {
+          $resultUpdate = $stmt->rowCount();
+          if ($this->isTransact)
+            $this->db->commit();
+        } else {
+          throw new Exception('Error al actualizar el registro');
+        }
+        return $resultUpdate; */
+        //$this->composeSentence("UPDATE {$this->table} SET {$fields}");
+        //return $this;
+      } else
+        throw new \PDOException('No se han proporcionado datos para actualizar');
+    } catch (\PDOException $e) {
+      /* if ($this->isTransact)
+        $this->db->rollBack(); */
       if (defined('ENVIRONMENT') && ENVIRONMENT === 'development') {
         return $this->sendError($e->getMessage());
       }
@@ -148,11 +174,12 @@ class LitCrud extends LitWhere
     }
   }
 
-  protected function delete(): mixed
+  protected function delete(?string $table = null): mixed
   {
-    try{
-    $this->composeSentence("DELETE FROM $this->table");
-    return $this;
+    try {
+      $table = $table ? $this->sanitize($table) : $this->table;
+      $this->composeSentence("DELETE FROM $table");
+      return $this;
     } catch (\Exception $e) {
       if (defined('ENVIRONMENT') && ENVIRONMENT === 'development') {
         return $this->sendError($e->getMessage());

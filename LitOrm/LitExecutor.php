@@ -9,19 +9,25 @@ class LitExecutor extends LitCrud
 {
   protected $db = null;
   protected ?string $sentence = '';
-
   public ?string $table = null;
+  protected ?bool $isTransact = false;
+  protected ?array $params = null;
 
   public function __construct()
   {
     parent::__construct();
   }
 
-  protected function query($sql)
+  protected function query(?string $sql = null): mixed
   {
     try {
-      $resukt = $this->db->query($sql);
-      return $resukt->fetchAll(\PDO::FETCH_ASSOC);
+      if (!$sql || empty($sql))
+        $sql = $this->sentence;
+      $this->sentence = '';
+      $result = $this->db->query($sql);
+      if(str_starts_with(trim($sql), 'DELETE') || str_starts_with(trim($sql), 'delete'))
+        return $result->rowCount();  
+      return $result->fetchAll(\PDO::FETCH_ASSOC);
     } catch (\Throwable $th) {
       if (defined('ENVIRONMENT') && ENVIRONMENT === 'development')
         return $th->getMessage();
@@ -47,14 +53,34 @@ class LitExecutor extends LitCrud
     }
   }
 
-  // Función para ejecutar una consulta con parámetros y manejar errores (veremos su utilidad más adelante)
-  private function executeQueryWithParams($sql, $params, $fetchAll = false)
+  protected function save(?bool $withId = false)
   {
     try {
+      if ($this->isTransact)
+          $this->db->beginTransaction();
+      $sql = $this->sentence;
+      $this->sentence = '';
       $stmt = $this->db->prepare($sql);
-      $stmt->execute($params);
-      return $fetchAll ? $stmt->fetchAll(\PDO::FETCH_ASSOC) : $stmt->fetchColumn();
-    } catch (\Exception $e) {
+      foreach ($this->params as $key => $value) {
+        $stmt->bindValue(":{$key}", $value);
+      }
+      $saved = $stmt->execute();
+      if ($saved && $stmt->rowCount() > 0) {
+        if(str_starts_with(trim($sql), 'INSERT') || str_starts_with(trim($sql), 'insert'))
+            $saved = $withId ? $this->db->lastInsertId() : true;
+        else
+          $saved = $withId ? $stmt->rowCount() : true;
+        if ($this->isTransact) {
+          $this->db->commit();          
+        }
+        return $saved;
+      } else {
+        throw new \PDOException('Error al guardar los datos');
+      }
+      //return $fetchAll ? $stmt->fetchAll(PDO::FETCH_ASSOC) : $stmt->fetchColumn();
+    } catch (\PDOException $e) {
+      if ($this->isTransact)
+        $this->db->rollBack();
       if (defined('ENVIRONMENT') && ENVIRONMENT === 'development') {
         return $e->getMessage();
       }

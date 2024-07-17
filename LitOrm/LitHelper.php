@@ -156,6 +156,22 @@ class LitHelper extends LitRawQueries
     }
   }
 
+  protected function lastId(?string $table): mixed
+  {
+    try {
+      $table = $table ? $this->sanitize($table) : $this->sanitize($this->table);
+      $lastId = "SELECT MAX(id) AS lastId FROM $table";
+      $this->composeSentence($lastId);
+      return $this;
+
+    } catch (\Exception $e) {
+      if (defined('ENVIRONMENT') && ENVIRONMENT === 'development') {
+        return $this->sendError($e->getMessage());
+      }
+      return 0;
+    }
+  }
+
   public function __destruct()
   {
     $this->db = null;
