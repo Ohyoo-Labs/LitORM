@@ -10,8 +10,8 @@ class LitHelper extends LitRawQueries
 {
   protected $db = null;
   protected ?string $sentence = '';
-
   public ?string $table = null;
+  protected bool $isStrictGroupByMode = true; // Por defecto, asumimos que está en modo estricto
 
   public function __construct()
   {
@@ -67,6 +67,27 @@ class LitHelper extends LitRawQueries
       return $this->sendError('Error en la consulta UNION');
     }
   }
+
+  protected function setGroupByMode(bool $strict = true): mixed
+  {
+    try {
+      if ($this->isStrictGroupByMode !== $strict) {
+        $sql = $strict
+          ? "SET SESSION sql_mode = CONCAT(@@sql_mode, ',ONLY_FULL_GROUP_BY')"
+          : "SET SESSION sql_mode = REPLACE(@@sql_mode, 'ONLY_FULL_GROUP_BY', '')";
+
+        $this->composeSentence("{$sql};");
+        $this->isStrictGroupByMode = $strict;
+      }
+      return $this;
+    } catch (\Exception $e) {
+      if (defined('ENVIRONMENT') && ENVIRONMENT === 'development') {
+        return $this->sendError($e->getMessage());
+      }
+      return $this->sendError('Error al configurar modo GROUP BY');
+    }
+  }
+
 
   protected function groupBy(string $group): mixed
   {
@@ -174,6 +195,8 @@ class LitHelper extends LitRawQueries
 
   public function __destruct()
   {
+    parent::__destruct();
     $this->db = null;
+    $this->isStrictGroupByMode = true; // Aseguramos que se resetea al destruir el objeto
   }
 }

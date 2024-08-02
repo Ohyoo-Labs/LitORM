@@ -66,6 +66,9 @@ class Lit extends LitExecutor
 
   public function __destruct()
   {
+    parent::__destruct();
     $this->db = null;
+    $this->sentence = null;
+    $this->table = null;
   }
 }

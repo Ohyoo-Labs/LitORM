@@ -15,7 +15,7 @@ class LitManager {
   }
 
   // Verifica si existe un registro en la tabla dada con la condición especificada
-  protected function exists($table, $where) {
+  protected function existsTable($table, $where) {
     $table = $this->sanitize($table);
     $sql = "SELECT EXISTS(SELECT 1 FROM $table WHERE $where)";
     $stmt = $this->db->prepare($sql);
@@ -24,7 +24,7 @@ class LitManager {
   }
 
   // Modifica la estructura de una tabla
-  protected function alter($table, $fields) {
+  protected function alterTable($table, $fields) {
     $table = $this->sanitize($table);
     try {
       $sql = "ALTER TABLE $table $fields";
@@ -40,7 +40,7 @@ class LitManager {
   }
 
   // Elimina una tabla
-  protected function drop($table) {
+  protected function dropTable($table) {
     $table = $this->sanitize($table);
     try {
       $sql = "DROP TABLE $table";
@@ -56,7 +56,7 @@ class LitManager {
   }
 
   // Crea una nueva tabla
-  protected function create($table, $fields) {
+  protected function createTable($table, $fields) {
     $table = $this->sanitize($table);
     try {
       $this->db->beginTransaction();
@@ -75,7 +75,7 @@ class LitManager {
   }
 
   // Vacía una tabla
-  protected function truncate($table) {
+  protected function truncateTable($table) {
     $table = $this->sanitize($table);
     try {
       $this->db->beginTransaction();
@@ -92,7 +92,8 @@ class LitManager {
       return false;
     }
   }
-  public function __destruct(){
+  public function __destruct()
+  {
     $this->db = null;
   }
 }

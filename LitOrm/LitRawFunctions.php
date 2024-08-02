@@ -80,7 +80,7 @@ class LitRawFunctions extends LitManager {
     $table = $this->sanitize($table);
     $field = $this->sanitize($field);
     $sql = "SELECT * FROM $table WHERE $field BETWEEN :value1 AND :value2";
-    return $this->executeQueryWithParams($sql, ['value1' => $value1, 'value2' => $value2], true);
+    return $this->rawExecuteQueryWithParams($sql, ['value1' => $value1, 'value2' => $value2], true);
   }
 
   // Función para ejecutar una consulta y manejar errores
@@ -111,7 +111,9 @@ class LitRawFunctions extends LitManager {
     }
   }
 
-  public function __destruct(){
+  public function __destruct()
+  {
+    parent::__destruct();
     $this->db = null;
   }
 }

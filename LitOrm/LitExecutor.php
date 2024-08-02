@@ -105,6 +105,7 @@ class LitExecutor extends LitCrud
   
   public function __destruct()
   {
+    parent::__destruct();
     $this->db = null;
   }  
 }

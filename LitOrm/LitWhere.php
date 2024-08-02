@@ -210,6 +210,9 @@ class LitWhere extends LitJoin
 
   public function __destruct()
   {
+    parent::__destruct();
+    $this->table = null;
+    $this->sentence = null;
     $this->db = null;
   }
 }

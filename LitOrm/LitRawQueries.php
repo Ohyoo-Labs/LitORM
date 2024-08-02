@@ -148,6 +148,7 @@ class LitRawQueries extends LitFunctions
 
   public function __destruct()
   {
+    parent::__destruct();
     $this->db = null;
   }
 }

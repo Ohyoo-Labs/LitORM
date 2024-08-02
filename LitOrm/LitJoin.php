@@ -95,6 +95,9 @@ class LitJoin extends LitHelper
     
   public function __destruct()
   {
+    parent::__destruct();
+    $this->table = null;
+    $this->sentence = '';
     $this->db = null;
   }  
 }

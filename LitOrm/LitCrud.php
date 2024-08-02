@@ -26,7 +26,7 @@ class LitCrud extends LitWhere
     return $this;
   }
 
-  protected function select(?string $fields): mixed
+  protected function select(?string $fields = null): mixed
   {
     try{
     if(!$fields && $fields !== '') {
@@ -189,6 +189,9 @@ class LitCrud extends LitWhere
   }
   public function __destruct()
   {
+    parent::__destruct();
+    $this->sentence = null;
+    $this->table = null;
     $this->db = null;
   }  
 }
